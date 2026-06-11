@@ -1,7 +1,7 @@
 # Phase 0 — Naive baseline
 
 > **Status:** Ready for implementation  
-> **Parent spec:** [`README.md`](../../README.md) (project source of truth)  
+> **Parent spec:** [`master-plan.md`](../../master-plan.md) (full internal plan; local, gitignored). Public overview: [`README.md`](../../README.md).  
 > **Goal:** Self-contained Worker with five scripted mock upstreams and a fragile BFF that 502s when any origin fails. This is the comparison baseline for later phases — not the product.
 
 ---
@@ -189,13 +189,15 @@ No secrets required Phase 0.
 
 ## Files to add (append to repo)
 
-Aligns with README suggested layout; Phase 0 subset only:
+Aligns with README repo layout; Phase 0 subset only:
 
 ```
 /
 ├── wrangler.toml
 ├── package.json
 ├── tsconfig.json
+├── vitest.config.mts
+├── worker-configuration.d.ts
 ├── src/
 │   ├── index.ts                    # router
 │   ├── handlers/
@@ -209,10 +211,17 @@ Aligns with README suggested layout; Phase 0 subset only:
 │   └── lib/
 │       ├── origins.ts              # origin names, paths, types
 │       └── fixtures.ts             # static JSON payloads
+├── tests/
+│   └── phase-0/
+│       ├── helpers.ts
+│       ├── ac.test.ts
+│       ├── ac-failures.test.ts
+│       └── ac-metrics-rate.test.ts
 └── spec-driven/
     └── phase-0/
         ├── spec.md                 # this file
-        └── tasks.md
+        ├── tasks.md
+        └── verify.md
 ```
 
 **Not created Phase 0:** `migrations/`, `eval/`, `src/lib/merge.ts`, `src/queue/`, KV/D1/Queue bindings.

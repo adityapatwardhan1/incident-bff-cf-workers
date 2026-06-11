@@ -95,7 +95,7 @@ Extract or share fetch logic from `incident-naive.ts` where sensible (avoid dupl
 
 ## 8. Phase 1 acceptance tests
 
-Create `spec-driven/phase-1/` test files mirroring Phase 0 structure. Reuse or extend `helpers.ts` (`workerFetch`, `workerJson`).
+Create `tests/phase-1/` test files mirroring Phase 0 structure. Reuse or extend `helpers.ts` (`workerFetch`, `workerJson`).
 
 - [ ] **T8.1** `helpers.ts` — same pattern as Phase 0 (`createExecutionContext`, `SELF` via vitest env).
 - [ ] **T8.2** `ac.test.ts` — AC-1 (happy path + headers), AC-6 (invalid id).

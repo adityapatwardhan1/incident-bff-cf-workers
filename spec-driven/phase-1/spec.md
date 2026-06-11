@@ -1,7 +1,7 @@
 # Phase 1 — Smart merge + KV slice cache
 
 > **Status:** Ready for implementation  
-> **Parent spec:** [`README.md`](../../README.md) (project source of truth)  
+> **Parent spec:** [`master-plan.md`](../../master-plan.md) (full internal plan; local, gitignored). Public overview: [`README.md`](../../README.md).  
 > **Prerequisite:** Phase 0 complete (naive baseline at `/incident/:id/naive`)  
 > **Goal:** Product BFF on `GET /incident/:incidentId` — partial merge when origins fail, per-origin KV slice cache, subrequest accounting.
 
@@ -35,7 +35,7 @@ Phase 1 delivers the **core product behavior** the naive baseline cannot:
 | Subrequest header | `X-Subrequests-Used: <n>` — counts origin fetches only |
 | Degraded signaling | `degraded` in JSON body; `X-Degraded: true` header when degraded |
 | Naive baseline | `/incident/:id/naive` unchanged (still 502 on any failure) |
-| AC tests | `spec-driven/phase-1/*.test.ts` mapped to AC table below |
+| AC tests | `tests/phase-1/*.test.ts` mapped to AC table below |
 
 ### Out of scope (defer to later phases)
 
@@ -262,15 +262,17 @@ Phase 0 vars unchanged. Phase 1 additions (optional):
 │       ├── merge.ts                       # partial merge + degraded flag
 │       ├── subrequests.ts                 # counter helper
 │       └── origins.ts                     # extend types (PartialIncidentResponse)
+├── tests/
+│   └── phase-1/
+│       ├── helpers.ts
+│       ├── ac.test.ts
+│       ├── ac-failures.test.ts
+│       ├── ac-cache.test.ts
+│       └── ac-metrics-rate.test.ts
 └── spec-driven/
     └── phase-1/
         ├── spec.md                        # this file
         ├── tasks.md
-        ├── helpers.ts
-        ├── ac.test.ts
-        ├── ac-failures.test.ts
-        ├── ac-cache.test.ts
-        ├── ac-metrics-rate.test.ts
         └── verify.md                      # optional manual curls
 ```
 
@@ -280,7 +282,7 @@ Phase 0 vars unchanged. Phase 1 additions (optional):
 
 ## Acceptance criteria
 
-Automated tests in `spec-driven/phase-1/*.test.ts` (run via `npm run test:phase-1`). Phase 0 tests must still pass (`npm run test:phase-0`).
+Automated tests in `tests/phase-1/*.test.ts` (run via `npm run test:phase-1`). Phase 0 tests must still pass (`npm run test:phase-0`).
 
 | # | Scenario | Expected | Test file |
 |---|----------|----------|-----------|
@@ -314,6 +316,6 @@ Automated tests in `spec-driven/phase-1/*.test.ts` (run via `npm run test:phase-
 ## References
 
 - [Phase 0 spec](../phase-0/spec.md)
-- [README — Phase 1](../../README.md#implementation-phases)
-- [README — Partial failure semantics](../../README.md#partial-failure-semantics-15-vs-25)
+- [master-plan — Phase 1](../../master-plan.md#implementation-phases)
+- [master-plan — Partial failure semantics](../../master-plan.md#partial-failure-semantics-15-vs-25)
 - [Cloudflare Workers KV](https://developers.cloudflare.com/kv/)
