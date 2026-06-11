@@ -1,0 +1,11 @@
+name = "incident-bff-cf-workers"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+
+[[services]]
+binding = "SELF"
+service = "incident-bff-cf-workers"
+
+[vars]
+TICKETS_MODE = "ok"
+METRICS_RATE_LIMIT = "10"

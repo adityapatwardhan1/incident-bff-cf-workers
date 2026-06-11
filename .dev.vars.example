@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local wrangler dev overrides
+TICKETS_MODE=ok
+METRICS_RATE_LIMIT=10
+# MOCK_BASE_URL=http://127.0.0.1:8787
