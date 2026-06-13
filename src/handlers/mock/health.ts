@@ -1,9 +1,9 @@
-import { healthFixture, jsonResponse } from "../../lib/fixtures";
+import { healthFixture, mockJsonResponse } from "../../lib/fixtures";
 
 export async function handleHealth(
   _request: Request,
   _env: Env,
   incidentId: string,
 ): Promise<Response> {
-  return jsonResponse(healthFixture(incidentId));
+  return mockJsonResponse("health-api", healthFixture(incidentId));
 }

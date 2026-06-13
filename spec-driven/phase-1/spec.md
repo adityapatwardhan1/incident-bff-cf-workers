@@ -319,3 +319,4 @@ Automated tests in `tests/phase-1/*.test.ts` (run via `npm run test:phase-1`). P
 - [master-plan — Phase 1](../../master-plan.md#implementation-phases)
 - [master-plan — Partial failure semantics](../../master-plan.md#partial-failure-semantics-15-vs-25)
 - [Cloudflare Workers KV](https://developers.cloudflare.com/kv/)
+- [Phase 2 spec](../phase-2/spec.md) (next: D1 circuit breakers)

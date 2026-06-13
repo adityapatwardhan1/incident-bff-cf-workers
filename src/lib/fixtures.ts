@@ -6,6 +6,9 @@ import type {
   TicketsSlice,
 } from "./origins";
 
+import type { OriginId } from "./origins";
+import { recordMockCall } from "./mock-call-count";
+
 export function metricsFixture(incidentId: string): MetricsSlice {
   return { errorRate: 0.042, window: "5m", incidentId };
 }
@@ -42,6 +45,17 @@ export function docsFixture(incidentId: string): DocsSlice {
     incidentId,
     runbookUrl: "https://example.com/runbooks/incident",
   };
+}
+
+export function mockJsonResponse(
+  origin: OriginId,
+  data: unknown,
+  init?: ResponseInit,
+): Response {
+  const count = recordMockCall(origin);
+  const headers = new Headers(init?.headers);
+  headers.set("X-Mock-Call-Count", String(count));
+  return Response.json(data, { ...init, headers });
 }
 
 export function jsonResponse(data: unknown, init?: ResponseInit): Response {

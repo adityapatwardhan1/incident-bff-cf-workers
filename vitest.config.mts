@@ -3,6 +3,7 @@ import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
 
 export default defineWorkersConfig({
   test: {
+    setupFiles: ["./tests/apply-migrations.ts"],
     include: ["tests/**/*.test.ts"],
     testTimeout: 15_000,
     fileParallelism: false,

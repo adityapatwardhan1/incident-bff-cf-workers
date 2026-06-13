@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:phase-0": "vitest run tests/phase-0",
     "test:phase-1": "vitest run tests/phase-1",
+    "test:phase-2": "vitest run tests/phase-2",
     "test:watch": "vitest"
   },
   "devDependencies": {

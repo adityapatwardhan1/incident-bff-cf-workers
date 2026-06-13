@@ -1,4 +1,4 @@
-import { delay, jsonResponse, ticketsFixture } from "../../lib/fixtures";
+import { delay, mockJsonResponse, ticketsFixture } from "../../lib/fixtures";
 import { UPSTREAM_FETCH_TIMEOUT_MS } from "../../lib/origins";
 
 function ticketsMode(request: Request, env: Env): string {
@@ -17,7 +17,8 @@ export async function handleTickets(
   const mode = ticketsMode(request, env);
 
   if (mode === "500") {
-    return jsonResponse(
+    return mockJsonResponse(
+      "tickets-api",
       { error: "internal_error", incidentId },
       { status: 500 },
     );
@@ -25,9 +26,9 @@ export async function handleTickets(
 
   if (mode === "timeout") {
     await delay(UPSTREAM_FETCH_TIMEOUT_MS + 1_000);
-    return jsonResponse(ticketsFixture(incidentId));
+    return mockJsonResponse("tickets-api", ticketsFixture(incidentId));
   }
 
   await delay(300);
-  return jsonResponse(ticketsFixture(incidentId));
+  return mockJsonResponse("tickets-api", ticketsFixture(incidentId));
 }

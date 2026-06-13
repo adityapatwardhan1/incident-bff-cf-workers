@@ -11,6 +11,12 @@ binding = "SLICE_CACHE"
 id = "00000000000000000000000000000001"
 preview_id = "00000000000000000000000000000001"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "incident-bff-circuit"
+database_id = "00000000000000000000000000000002"
+migrations_dir = "migrations"
+
 [vars]
 TICKETS_MODE = "ok"
 METRICS_RATE_LIMIT = "10"

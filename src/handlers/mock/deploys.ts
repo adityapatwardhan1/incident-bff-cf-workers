@@ -1,4 +1,4 @@
-import { delay, deploysFixture, jsonResponse } from "../../lib/fixtures";
+import { delay, deploysFixture, mockJsonResponse } from "../../lib/fixtures";
 
 export async function handleDeploys(
   _request: Request,
@@ -6,5 +6,5 @@ export async function handleDeploys(
   incidentId: string,
 ): Promise<Response> {
   await delay(50);
-  return jsonResponse(deploysFixture(incidentId));
+  return mockJsonResponse("deploys-api", deploysFixture(incidentId));
 }

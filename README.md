@@ -36,7 +36,7 @@ The browser calls **one** endpoint. The Worker merges slices, serves cache where
 |-------|--------|-------------|
 | **0** | Done | Five mock upstreams, naive merge baseline (`/incident/:id/naive`), acceptance tests |
 | **1** | Done | KV slice cache, partial merge on `/incident/:id`, `degraded` flag, subrequest header |
-| **2** | Planned | D1 circuit breakers |
+| **2** | Done | D1 circuit breakers, skip open origins, `X-Circuits-Open` header |
 | **3** | Planned | Queue-paced metrics refresh, stale-while-revalidate |
 | **4** | Planned | Cross-phase eval harness, CI gate |
 | **5** | Planned | ADRs, production deploy |
@@ -102,6 +102,7 @@ npm run typecheck
 npm test             # all acceptance tests
 npm run test:phase-0 # Phase 0 only
 npm run test:phase-1 # Phase 1 only
+npm run test:phase-2 # Phase 2 only
 ```
 
 Example:
@@ -131,6 +132,7 @@ Acceptance tests map 1:1 to each phase's `spec-driven/phase-N/spec.md` AC table.
 npm test                 # all phase tests
 npm run test:phase-0     # Phase 0 (7 tests)
 npm run test:phase-1     # Phase 1 (8 tests)
+npm run test:phase-2     # Phase 2 (6 tests)
 npm run test:watch       # watch mode
 ```
 
@@ -160,32 +162,45 @@ npm run test:watch       # watch mode
 │       ├── origins.ts            # types, paths, origin list
 │       ├── fixtures.ts           # static JSON payloads
 │       ├── cache.ts              # KV slice get/put
+│       ├── circuit.ts            # D1 circuit breaker
 │       ├── merge.ts              # partial merge + degraded flag
 │       ├── subrequests.ts        # subrequest counter
+│       ├── mock-call-count.ts    # mock handler call counters
 │       └── upstream-fetch.ts     # shared origin fetch helpers
+├── migrations/
+│   └── 0001_circuit_state.sql
 ├── tests/
+│   ├── apply-migrations.ts       # D1 schema for vitest
 │   ├── phase-0/
 │   │   ├── helpers.ts
 │   │   ├── ac.test.ts
 │   │   ├── ac-failures.test.ts
 │   │   └── ac-metrics-rate.test.ts
-│   └── phase-1/
+│   ├── phase-1/
+│   │   ├── helpers.ts
+│   │   ├── ac.test.ts
+│   │   ├── ac-failures.test.ts
+│   │   ├── ac-cache.test.ts
+│   │   └── ac-metrics-rate.test.ts
+│   └── phase-2/
 │       ├── helpers.ts
 │       ├── ac.test.ts
-│       ├── ac-failures.test.ts
-│       ├── ac-cache.test.ts
-│       └── ac-metrics-rate.test.ts
+│       ├── ac-circuit.test.ts
+│       └── ac-failures.test.ts
 └── spec-driven/
     ├── phase-0/
     │   ├── spec.md
     │   ├── tasks.md
     │   └── verify.md
-    └── phase-1/
+    ├── phase-1/
+    │   ├── spec.md
+    │   └── tasks.md
+    └── phase-2/
         ├── spec.md
         └── tasks.md
 ```
 
-Planned additions (later phases): `src/lib/circuit.ts`, `src/queue/`, `migrations/`, `eval/`, `docs/`.
+Planned additions (later phases): `src/queue/`, `eval/`, `docs/`.
 
 ---
 
@@ -194,7 +209,7 @@ Planned additions (later phases): `src/lib/circuit.ts`, `src/queue/`, `migration
 | Binding | Use |
 |---------|-----|
 | **KV** | Per-origin slice cache (`SLICE_CACHE`) |
-| **D1** | Circuit breaker state, audit logs (Phase 2+) |
+| **D1** | Circuit breaker state (`DB`) |
 | **Queues** | Background metrics refresh (Phase 3+) |
 | **SELF** | Same-worker subrequests to mock upstreams |
 

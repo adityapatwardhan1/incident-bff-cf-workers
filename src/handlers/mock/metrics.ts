@@ -1,4 +1,4 @@
-import { jsonResponse, metricsFixture } from "../../lib/fixtures";
+import { metricsFixture, mockJsonResponse } from "../../lib/fixtures";
 
 const WINDOW_MS = 60_000;
 const requestTimestamps: number[] = [];
@@ -28,10 +28,11 @@ export async function handleMetrics(
 ): Promise<Response> {
   const limit = parseLimit(env);
   if (isRateLimited(limit)) {
-    return jsonResponse(
+    return mockJsonResponse(
+      "metrics-api",
       { error: "rate_limited", incidentId },
       { status: 429 },
     );
   }
-  return jsonResponse(metricsFixture(incidentId));
+  return mockJsonResponse("metrics-api", metricsFixture(incidentId));
 }
