@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:phase-0": "vitest run tests/phase-0",
+    "test:phase-1": "vitest run tests/phase-1",
     "test:watch": "vitest"
   },
   "devDependencies": {

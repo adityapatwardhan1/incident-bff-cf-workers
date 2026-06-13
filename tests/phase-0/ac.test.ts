@@ -33,11 +33,6 @@ describe("Phase 0 AC — core routes", () => {
     expect(body.error).toBe("invalid_incident_id");
   });
 
-  it("AC-7: bare /incident/:id without /naive returns 404", async () => {
-    const response = await workerFetch("/incident/INC-4421");
-    expect(response.status).toBe(404);
-  });
-
   it("health route returns ok", async () => {
     const { response, body } = await workerJson<{ ok: boolean }>("/health");
     expect(response.status).toBe(200);

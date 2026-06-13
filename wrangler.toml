@@ -6,6 +6,11 @@ compatibility_date = "2025-03-01"
 binding = "SELF"
 service = "incident-bff-cf-workers"
 
+[[kv_namespaces]]
+binding = "SLICE_CACHE"
+id = "00000000000000000000000000000001"
+preview_id = "00000000000000000000000000000001"
+
 [vars]
 TICKETS_MODE = "ok"
 METRICS_RATE_LIMIT = "10"

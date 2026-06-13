@@ -1,3 +1,4 @@
+import { handleIncident } from "./handlers/incident";
 import { handleIncidentNaive } from "./handlers/incident-naive";
 import { handleDeploys } from "./handlers/mock/deploys";
 import { handleDocs } from "./handlers/mock/docs";
@@ -36,6 +37,11 @@ export default {
     const naiveMatch = pathname.match(/^\/incident\/([^/]+)\/naive$/);
     if (request.method === "GET" && naiveMatch) {
       return handleIncidentNaive(request, env, naiveMatch[1]!);
+    }
+
+    const incidentMatch = pathname.match(/^\/incident\/([^/]+)$/);
+    if (request.method === "GET" && incidentMatch) {
+      return handleIncident(request, env, incidentMatch[1]!);
     }
 
     const mockMatch = pathname.match(/^\/mock\/([^/]+)\/([^/]+)$/);

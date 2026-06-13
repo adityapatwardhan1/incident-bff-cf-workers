@@ -35,7 +35,7 @@ The browser calls **one** endpoint. The Worker merges slices, serves cache where
 | Phase | Status | Deliverable |
 |-------|--------|-------------|
 | **0** | Done | Five mock upstreams, naive merge baseline (`/incident/:id/naive`), acceptance tests |
-| **1** | Planned | KV slice cache, partial merge on `/incident/:id`, `degraded` flag, subrequest header |
+| **1** | Done | KV slice cache, partial merge on `/incident/:id`, `degraded` flag, subrequest header |
 | **2** | Planned | D1 circuit breakers |
 | **3** | Planned | Queue-paced metrics refresh, stale-while-revalidate |
 | **4** | Planned | Cross-phase eval harness, CI gate |
@@ -84,7 +84,7 @@ flowchart TB
 |--------|------|-------------|
 | `GET` | `/health` | Liveness check |
 | `GET` | `/incident/:incidentId/naive` | Naive merge — 502 if any origin fails |
-| `GET` | `/incident/:incidentId` | Smart merge — Phase 1 (currently 404) |
+| `GET` | `/incident/:incidentId` | Smart merge — partial failure, KV cache |
 | `GET` | `/mock/{origin}/:incidentId` | Mock upstream (same Worker) |
 
 Incident IDs must match `INC-[A-Za-z0-9]+` (e.g. `INC-4421`).
@@ -101,6 +101,7 @@ npm run dev          # local Worker at http://localhost:8787
 npm run typecheck
 npm test             # all acceptance tests
 npm run test:phase-0 # Phase 0 only
+npm run test:phase-1 # Phase 1 only
 ```
 
 Example:
@@ -128,7 +129,8 @@ Acceptance tests map 1:1 to each phase's `spec-driven/phase-N/spec.md` AC table.
 
 ```bash
 npm test                 # all phase tests
-npm run test:phase-0     # Phase 0 (8 tests)
+npm run test:phase-0     # Phase 0 (7 tests)
+npm run test:phase-1     # Phase 1 (8 tests)
 npm run test:watch       # watch mode
 ```
 
@@ -146,6 +148,7 @@ npm run test:watch       # watch mode
 ├── src/
 │   ├── index.ts                 # router
 │   ├── handlers/
+│   │   ├── incident.ts           # GET /incident/:id — smart merge
 │   │   ├── incident-naive.ts     # GET /incident/:id/naive
 │   │   └── mock/                 # mock upstream handlers
 │   │       ├── metrics.ts
@@ -155,12 +158,22 @@ npm run test:watch       # watch mode
 │   │       └── docs.ts
 │   └── lib/
 │       ├── origins.ts            # types, paths, origin list
-│       └── fixtures.ts           # static JSON payloads
+│       ├── fixtures.ts           # static JSON payloads
+│       ├── cache.ts              # KV slice get/put
+│       ├── merge.ts              # partial merge + degraded flag
+│       ├── subrequests.ts        # subrequest counter
+│       └── upstream-fetch.ts     # shared origin fetch helpers
 ├── tests/
-│   └── phase-0/
+│   ├── phase-0/
+│   │   ├── helpers.ts
+│   │   ├── ac.test.ts
+│   │   ├── ac-failures.test.ts
+│   │   └── ac-metrics-rate.test.ts
+│   └── phase-1/
 │       ├── helpers.ts
 │       ├── ac.test.ts
 │       ├── ac-failures.test.ts
+│       ├── ac-cache.test.ts
 │       └── ac-metrics-rate.test.ts
 └── spec-driven/
     ├── phase-0/
@@ -172,7 +185,7 @@ npm run test:watch       # watch mode
         └── tasks.md
 ```
 
-Planned additions (later phases): `src/handlers/incident.ts`, `src/lib/cache.ts`, `src/lib/merge.ts`, `src/lib/circuit.ts`, `src/queue/`, `tests/phase-1/`, `migrations/`, `eval/`, `docs/`.
+Planned additions (later phases): `src/lib/circuit.ts`, `src/queue/`, `migrations/`, `eval/`, `docs/`.
 
 ---
 
@@ -180,7 +193,7 @@ Planned additions (later phases): `src/handlers/incident.ts`, `src/lib/cache.ts`
 
 | Binding | Use |
 |---------|-----|
-| **KV** | Per-origin slice cache (Phase 1+) |
+| **KV** | Per-origin slice cache (`SLICE_CACHE`) |
 | **D1** | Circuit breaker state, audit logs (Phase 2+) |
 | **Queues** | Background metrics refresh (Phase 3+) |
 | **SELF** | Same-worker subrequests to mock upstreams |

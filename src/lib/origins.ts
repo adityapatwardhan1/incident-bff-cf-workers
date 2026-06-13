@@ -57,6 +57,22 @@ export interface IncidentErrorResponse {
   failedOrigin: OriginId;
 }
 
+export interface PartialIncidentResponse {
+  incidentId: string;
+  degraded: boolean;
+  metrics: MetricsSlice | null;
+  deploys: DeploysSlice | null;
+  health: HealthSlice | null;
+  tickets: TicketsSlice | null;
+  docs: DocsSlice | null;
+}
+
+export interface NoDataErrorResponse {
+  error: "no_data";
+  incidentId: string;
+  degraded: true;
+}
+
 /** INC-4421 style: prefix INC- plus alphanumeric segment */
 export const INCIDENT_ID_PATTERN = /^INC-[A-Za-z0-9]+$/;
 
