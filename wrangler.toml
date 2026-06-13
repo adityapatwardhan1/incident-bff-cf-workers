@@ -17,6 +17,16 @@ database_name = "incident-bff-circuit"
 database_id = "00000000000000000000000000000002"
 migrations_dir = "migrations"
 
+[[queues.producers]]
+binding = "REFRESH_QUEUE"
+queue = "incident-bff-refresh"
+
+[[queues.consumers]]
+queue = "incident-bff-refresh"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+
 [vars]
 TICKETS_MODE = "ok"
 METRICS_RATE_LIMIT = "10"

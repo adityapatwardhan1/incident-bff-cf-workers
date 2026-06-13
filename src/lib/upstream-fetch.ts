@@ -23,12 +23,16 @@ export async function fetchWithTimeout(
   }
 }
 
-export async function fetchOriginJson(
+export type FetchOriginResult =
+  | { ok: true; data: unknown }
+  | { ok: false; status?: number };
+
+export async function fetchOriginWithStatus(
   env: Env,
   incomingRequest: Request,
   origin: OriginId,
   incidentId: string,
-): Promise<{ ok: true; data: unknown } | { ok: false }> {
+): Promise<FetchOriginResult> {
   const url = buildMockUrl(env, incomingRequest.url, origin, incidentId);
   try {
     const response = await fetchWithTimeout(
@@ -38,11 +42,24 @@ export async function fetchOriginJson(
       incomingRequest.headers,
     );
     if (!response.ok) {
-      return { ok: false };
+      return { ok: false, status: response.status };
     }
     const data = await response.json();
     return { ok: true, data };
   } catch {
     return { ok: false };
   }
+}
+
+export async function fetchOriginJson(
+  env: Env,
+  incomingRequest: Request,
+  origin: OriginId,
+  incidentId: string,
+): Promise<{ ok: true; data: unknown } | { ok: false }> {
+  const result = await fetchOriginWithStatus(env, incomingRequest, origin, incidentId);
+  if (result.ok) {
+    return result;
+  }
+  return { ok: false };
 }

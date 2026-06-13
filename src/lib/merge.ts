@@ -8,6 +8,7 @@ import {
 export interface OriginSliceResult {
   origin: OriginId;
   slice: unknown | null;
+  stale?: boolean;
 }
 
 export function mergeSlices(
@@ -16,7 +17,9 @@ export function mergeSlices(
 ): PartialIncidentResponse {
   const byOrigin = new Map(results.map((r) => [r.origin, r.slice]));
   const slices = ORIGIN_IDS.map((origin) => byOrigin.get(origin) ?? null);
-  const degraded = slices.some((slice) => slice === null);
+  const degraded =
+    slices.some((slice) => slice === null) ||
+    results.some((r) => r.stale === true);
 
   return {
     incidentId,

@@ -37,7 +37,7 @@ The browser calls **one** endpoint. The Worker merges slices, serves cache where
 | **0** | Done | Five mock upstreams, naive merge baseline (`/incident/:id/naive`), acceptance tests |
 | **1** | Done | KV slice cache, partial merge on `/incident/:id`, `degraded` flag, subrequest header |
 | **2** | Done | D1 circuit breakers, skip open origins, `X-Circuits-Open` header |
-| **3** | Planned | Queue-paced metrics refresh, stale-while-revalidate |
+| **3** | Done | Queue-paced metrics refresh, stale-while-revalidate, `X-Stale-Slices` |
 | **4** | Planned | Cross-phase eval harness, CI gate |
 | **5** | Planned | ADRs, production deploy |
 
@@ -72,22 +72,31 @@ flowchart TB
   Queue --> KV
 ```
 
-**Hot path (request):** validate incident ID → read KV slice per origin → fetch on miss → merge available slices → return JSON with `degraded` and `X-Subrequests-Used`.
+**Hot path (request):** validate incident ID → read KV slice per origin → fetch on miss → merge available slices → return JSON with `degraded` and `X-Subrequests-Used`. Phase 3 adds stale-while-revalidate for `metrics-api`: serve expired KV within a stale window when the upstream returns **429** (or when the metrics circuit is open), with `X-Stale-Slices` marking stale origins.
 
-**Cold path (background):** queue consumer refreshes rate-limited origins and writes fresh slices to KV.
+**Cold path (background):** `REFRESH_QUEUE` consumer refreshes `metrics-api` on a paced batch schedule and writes fresh slices to KV. The smart route enqueues refresh jobs on metrics cache miss and on 429 via `waitUntil`.
 
 ---
 
-## API (Phase 0)
+## API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness check |
 | `GET` | `/incident/:incidentId/naive` | Naive merge — 502 if any origin fails |
-| `GET` | `/incident/:incidentId` | Smart merge — partial failure, KV cache |
+| `GET` | `/incident/:incidentId` | Smart merge — partial failure, KV cache, circuit breakers; Phase 3 adds metrics stale-while-revalidate |
 | `GET` | `/mock/{origin}/:incidentId` | Mock upstream (same Worker) |
 
 Incident IDs must match `INC-[A-Za-z0-9]+` (e.g. `INC-4421`).
+
+### Smart route response headers
+
+| Header | When |
+|--------|------|
+| `X-Subrequests-Used` | Always — origin fetches only |
+| `X-Degraded` | `degraded: true` in body |
+| `X-Circuits-Open` | Origins skipped due to open circuit (Phase 2) |
+| `X-Stale-Slices` | Origins served from expired KV (Phase 3, `metrics-api`) |
 
 ---
 
@@ -103,6 +112,7 @@ npm test             # all acceptance tests
 npm run test:phase-0 # Phase 0 only
 npm run test:phase-1 # Phase 1 only
 npm run test:phase-2 # Phase 2 only
+npm run test:phase-3 # Phase 3 only
 ```
 
 Example:
@@ -133,6 +143,7 @@ npm test                 # all phase tests
 npm run test:phase-0     # Phase 0 (7 tests)
 npm run test:phase-1     # Phase 1 (8 tests)
 npm run test:phase-2     # Phase 2 (6 tests)
+npm run test:phase-3     # Phase 3 (7 tests)
 npm run test:watch       # watch mode
 ```
 
@@ -148,7 +159,7 @@ npm run test:watch       # watch mode
 ├── vitest.config.mts
 ├── worker-configuration.d.ts
 ├── src/
-│   ├── index.ts                 # router
+│   ├── index.ts                 # router + queue() consumer (Phase 3)
 │   ├── handlers/
 │   │   ├── incident.ts           # GET /incident/:id — smart merge
 │   │   ├── incident-naive.ts     # GET /incident/:id/naive
@@ -158,12 +169,15 @@ npm run test:watch       # watch mode
 │   │       ├── health.ts
 │   │       ├── tickets.ts
 │   │       └── docs.ts
+│   ├── queue/
+│   │   └── refresh.ts            # REFRESH_QUEUE consumer (Phase 3)
 │   └── lib/
 │       ├── origins.ts            # types, paths, origin list
 │       ├── fixtures.ts           # static JSON payloads
-│       ├── cache.ts              # KV slice get/put
+│       ├── cache.ts              # KV slice get/put (+ stale helpers, Phase 3)
 │       ├── circuit.ts            # D1 circuit breaker
 │       ├── merge.ts              # partial merge + degraded flag
+│       ├── refresh-queue.ts      # enqueue metrics refresh (Phase 3)
 │       ├── subrequests.ts        # subrequest counter
 │       ├── mock-call-count.ts    # mock handler call counters
 │       └── upstream-fetch.ts     # shared origin fetch helpers
@@ -182,10 +196,16 @@ npm run test:watch       # watch mode
 │   │   ├── ac-failures.test.ts
 │   │   ├── ac-cache.test.ts
 │   │   └── ac-metrics-rate.test.ts
-│   └── phase-2/
+│   ├── phase-2/
+│   │   ├── helpers.ts
+│   │   ├── ac.test.ts
+│   │   ├── ac-circuit.test.ts
+│   │   └── ac-failures.test.ts
+│   └── phase-3/
 │       ├── helpers.ts
 │       ├── ac.test.ts
-│       ├── ac-circuit.test.ts
+│       ├── ac-stale.test.ts
+│       ├── ac-queue.test.ts
 │       └── ac-failures.test.ts
 └── spec-driven/
     ├── phase-0/
@@ -195,12 +215,15 @@ npm run test:watch       # watch mode
     ├── phase-1/
     │   ├── spec.md
     │   └── tasks.md
-    └── phase-2/
+    ├── phase-2/
+    │   ├── spec.md
+    │   └── tasks.md
+    └── phase-3/
         ├── spec.md
         └── tasks.md
 ```
 
-Planned additions (later phases): `src/queue/`, `eval/`, `docs/`.
+Planned additions (later phases): `eval/`, `docs/`.
 
 ---
 
@@ -210,7 +233,7 @@ Planned additions (later phases): `src/queue/`, `eval/`, `docs/`.
 |---------|-----|
 | **KV** | Per-origin slice cache (`SLICE_CACHE`) |
 | **D1** | Circuit breaker state (`DB`) |
-| **Queues** | Background metrics refresh (Phase 3+) |
+| **Queues** | Background metrics refresh (`REFRESH_QUEUE` — producer on smart route, consumer in `src/queue/refresh.ts`) |
 | **SELF** | Same-worker subrequests to mock upstreams |
 
 ---

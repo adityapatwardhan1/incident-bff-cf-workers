@@ -5,7 +5,9 @@ import { handleDocs } from "./handlers/mock/docs";
 import { handleHealth } from "./handlers/mock/health";
 import { handleMetrics } from "./handlers/mock/metrics";
 import { handleTickets } from "./handlers/mock/tickets";
+import type { RefreshMessage } from "./lib/refresh-queue";
 import { ORIGIN_IDS, type OriginId } from "./lib/origins";
+import { handleRefreshQueue } from "./queue/refresh";
 
 type UpstreamHandler = (
   request: Request,
@@ -26,7 +28,11 @@ function notFound(): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
 
@@ -41,7 +47,7 @@ export default {
 
     const incidentMatch = pathname.match(/^\/incident\/([^/]+)$/);
     if (request.method === "GET" && incidentMatch) {
-      return handleIncident(request, env, incidentMatch[1]!);
+      return handleIncident(request, env, ctx, incidentMatch[1]!);
     }
 
     const mockMatch = pathname.match(/^\/mock\/([^/]+)\/([^/]+)$/);
@@ -56,4 +62,12 @@ export default {
 
     return notFound();
   },
-} satisfies ExportedHandler<Env>;
+
+  async queue(
+    batch: MessageBatch<RefreshMessage>,
+    env: Env,
+    _ctx: ExecutionContext,
+  ): Promise<void> {
+    await handleRefreshQueue(batch, env);
+  },
+} satisfies ExportedHandler<Env, RefreshMessage>;
